@@ -8,10 +8,10 @@ import (
 // Styles holds all lipgloss styles derived from config.Theme.
 type Styles struct {
 	// Category bar
-	CatSelected  lipgloss.Style
-	CatAdjacent  lipgloss.Style
-	CatFar       lipgloss.Style
-	CatHidden    lipgloss.Style
+	CatSelected lipgloss.Style
+	CatAdjacent lipgloss.Style
+	CatFar      lipgloss.Style
+	CatHidden   lipgloss.Style
 
 	// Item list
 	ItemSelected lipgloss.Style
