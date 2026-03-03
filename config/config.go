@@ -25,6 +25,7 @@ type Category struct {
 	Name  string `yaml:"name"`
 	Icon  string `yaml:"icon"`
 	Color string `yaml:"color,omitempty"` // optional hex accent, e.g. "#ff8800"
+	Scan  bool   `yaml:"scan,omitempty"`  // if true, Items are populated from XDG .desktop scan
 	Items []Item `yaml:"items"`
 }
 
@@ -56,6 +57,12 @@ func Load() (Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, err
+	}
+	// Populate scan categories from XDG .desktop discovery
+	for i := range cfg.Categories {
+		if cfg.Categories[i].Scan {
+			cfg.Categories[i].Items = ScanApplications()
+		}
 	}
 	return cfg, nil
 }

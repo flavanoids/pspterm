@@ -24,6 +24,7 @@ main.go               — entry point, /dev/tty setup, eval trick stdout
 config/
   config.go           — Config/Theme/Category/Item structs + YAML load/save
   defaults.go         — LoadOrCreate, embedded default config YAML
+  scan.go             — ScanApplications() for XDG .desktop discovery
 model/
   model.go            — tea.Model (Init/Update/View), spring step, clock
   keys.go             — KeyMap (key.NewBinding)
@@ -54,6 +55,11 @@ Spring lives in `model.New()`: `harmonica.NewSpring(harmonica.FPS(60), 14.0, 0.5
 ## Config file
 `~/.config/pspterm/config.yaml` — auto-created on first run from `config/defaults.go`.
 Press `r` in the UI to hot-reload without restarting.
+
+## Application scanning
+Categories with `scan: true` are populated from XDG .desktop files at load time.
+Searches `~/.local/share/applications`, `/usr/share/applications`, and `$XDG_DATA_DIRS`.
+Scan categories are read-only in the item manager.
 
 ## No test suite yet
 Add tests under `model/` or `config/` using standard `testing` package. No special build tags needed.

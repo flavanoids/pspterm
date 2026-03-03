@@ -34,6 +34,10 @@ Read the affected file fully before editing. The codebase is small — read all 
 2. Render in `model/model.go` `View()`.
 3. Adjust `usedLines` constant in `View()` if the element takes a fixed line.
 
+### Adding a scan category
+Categories with `scan: true` are populated from XDG .desktop files at load time.
+Scan logic lives in `config/scan.go`. Scan categories are excluded from the item manager (read-only).
+
 ### Changing the color scheme
 Edit `config/defaults.go` for the two config-driven colors (`accent_color`, `dim_color`).
 Edit hardcoded colors directly in `ui/styles.go` `NewStyles()` for structural colors (divider, clock, far categories, normal items).

@@ -13,19 +13,20 @@ import (
 // viewModel builds a ui.EditorView from the current editor state + config.
 func (e *EditorState) viewModel(cfg config.Config) ui.EditorView {
 	ev := ui.EditorView{
-		SubMode:    int(e.subMode),
-		ListIdx:    e.listIdx,
-		IsEditing:  e.isEditing,
-		NameView:   e.nameInput.View(),
-		DescView:   e.descInput.View(),
-		ValueView:  e.valueInput.View(),
-		CatSel:     e.catSel,
-		TypeSel:    e.typeSel,
-		FocusField: int(e.focusField),
-		Suggestion: e.suggestion,
-		StatusMsg:  e.statusMsg,
-		ItemTypes:  itemTypes,
-		Categories: cfg.Categories,
+		SubMode:         int(e.subMode),
+		ListIdx:         e.listIdx,
+		IsEditing:       e.isEditing,
+		NameView:        e.nameInput.View(),
+		DescView:        e.descInput.View(),
+		ValueView:       e.valueInput.View(),
+		CatSel:          e.catSel,
+		TypeSel:         e.typeSel,
+		FocusField:      int(e.focusField),
+		Suggestion:      e.suggestion,
+		StatusMsg:       e.statusMsg,
+		ItemTypes:       itemTypes,
+		Categories:      cfg.Categories,
+		EditableCatIdxs: e.editableCatIdxs,
 	}
 	for _, fi := range e.flatItems {
 		ev.FlatCatIdxs = append(ev.FlatCatIdxs, fi.catIdx)
@@ -70,17 +71,18 @@ type EditorState struct {
 	listIdx   int
 
 	// Form view
-	isEditing   bool
-	editCatIdx  int
-	editItemIdx int
-	nameInput   textinput.Model
-	descInput   textinput.Model
-	valueInput  textinput.Model
-	catSel      int // selected category index
-	typeSel     int // index into itemTypes
-	focusField  formField
-	suggestion  string // path from `which`
-	statusMsg   string
+	isEditing       bool
+	editCatIdx      int
+	editItemIdx     int
+	nameInput       textinput.Model
+	descInput       textinput.Model
+	valueInput      textinput.Model
+	editableCatIdxs []int  // indices of non-scan categories
+	catSel          int    // index into editableCatIdxs (not raw category index)
+	typeSel         int    // index into itemTypes
+	focusField      formField
+	suggestion      string // path from `which`
+	statusMsg       string
 }
 
 func newEditorState(cfg config.Config) EditorState {
@@ -108,7 +110,12 @@ func newEditorState(cfg config.Config) EditorState {
 
 func (e *EditorState) buildFlatItems(cfg config.Config) {
 	e.flatItems = nil
+	e.editableCatIdxs = nil
 	for ci, cat := range cfg.Categories {
+		if cat.Scan {
+			continue // skip scan categories — items are read-only, from XDG .desktop
+		}
+		e.editableCatIdxs = append(e.editableCatIdxs, ci)
 		for ii := range cat.Items {
 			e.flatItems = append(e.flatItems, flatItem{ci, ii})
 		}
@@ -118,7 +125,7 @@ func (e *EditorState) buildFlatItems(cfg config.Config) {
 func (e *EditorState) startAdd(cfg config.Config, defaultCatIdx int) {
 	e.subMode = editorForm
 	e.isEditing = false
-	e.catSel = defaultCatIdx
+	e.catSel = e.catIdxToEditableIdx(defaultCatIdx)
 	e.typeSel = 0
 	e.focusField = fieldName
 	e.nameInput.Reset()
@@ -142,7 +149,7 @@ func (e *EditorState) startEdit(cfg config.Config) {
 	e.isEditing = true
 	e.editCatIdx = fi.catIdx
 	e.editItemIdx = fi.itemIdx
-	e.catSel = fi.catIdx
+	e.catSel = e.catIdxToEditableIdx(fi.catIdx)
 	e.focusField = fieldName
 	e.suggestion = ""
 	e.statusMsg = ""
@@ -202,6 +209,22 @@ func (e *EditorState) formItem() config.Item {
 		item.URL = val
 	}
 	return item
+}
+
+func (e *EditorState) catIdxToEditableIdx(catIdx int) int {
+	for i, ci := range e.editableCatIdxs {
+		if ci == catIdx {
+			return i
+		}
+	}
+	return 0
+}
+
+func (e *EditorState) editableIdxToCatIdx(editableIdx int) int {
+	if editableIdx < 0 || editableIdx >= len(e.editableCatIdxs) {
+		return 0
+	}
+	return e.editableCatIdxs[editableIdx]
 }
 
 // whichCmd runs `which <name>` asynchronously and returns a WhichResultMsg.
@@ -340,11 +363,12 @@ func (m Model) updateEditorForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 				e.suggestion = ""
 				return m, nil
 			}
+			return m, nil
 
 		case "right":
 			switch e.focusField {
 			case fieldCat:
-				if e.catSel < len(m.cfg.Categories)-1 {
+				if e.catSel < len(e.editableCatIdxs)-1 {
 					e.catSel++
 				}
 				return m, nil
@@ -398,14 +422,15 @@ func (m Model) saveEditorForm() (tea.Model, tea.Cmd) {
 
 	cfg := m.cfg
 
+	targetCatIdx := e.editableIdxToCatIdx(e.catSel)
 	if e.isEditing {
 		// Remove from old location
 		oldCat := &cfg.Categories[e.editCatIdx]
 		oldCat.Items = append(oldCat.Items[:e.editItemIdx], oldCat.Items[e.editItemIdx+1:]...)
 		// Add to (possibly different) target category
-		cfg.Categories[e.catSel].Items = append(cfg.Categories[e.catSel].Items, item)
+		cfg.Categories[targetCatIdx].Items = append(cfg.Categories[targetCatIdx].Items, item)
 	} else {
-		cfg.Categories[e.catSel].Items = append(cfg.Categories[e.catSel].Items, item)
+		cfg.Categories[targetCatIdx].Items = append(cfg.Categories[targetCatIdx].Items, item)
 	}
 
 	if err := config.Save(cfg); err != nil {

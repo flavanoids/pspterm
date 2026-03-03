@@ -34,16 +34,17 @@ type EditorView struct {
 	ListIdx      int
 
 	// Form view
-	IsEditing  bool
-	NameView   string // rendered textinput.View()
-	DescView   string // rendered textinput.View()
-	ValueView  string // rendered textinput.View()
-	CatSel     int
-	TypeSel    int
-	FocusField int
-	Suggestion string
-	StatusMsg  string
-	ItemTypes  []string
+	IsEditing       bool
+	NameView        string // rendered textinput.View()
+	DescView        string // rendered textinput.View()
+	ValueView       string // rendered textinput.View()
+	CatSel          int    // index into EditableCatIdxs
+	TypeSel         int
+	FocusField      int
+	Suggestion      string
+	StatusMsg       string
+	ItemTypes       []string
+	EditableCatIdxs []int // indices of categories that can be edited (excludes scan categories)
 
 	Categories []config.Category
 }
@@ -195,14 +196,16 @@ func renderEditorForm(ev EditorView, width, height int, s Styles) string {
 	lines = append(lines, "  "+dLabel+"  "+ev.DescView)
 	lines = append(lines, "")
 
-	// Category picker
+	// Category picker (only editable categories — excludes scan categories)
 	catLabel := label.Render("Category:")
 	if ev.FocusField == FormFieldCat {
 		catLabel = focused.Render(label.Render("Category:"))
 	}
-	catPicker := renderPicker(ev.Categories, func(i int) string {
-		return ev.Categories[i].Name
-	}, ev.CatSel, ev.FocusField == FormFieldCat, focused, unfocused)
+	editableNames := make([]string, len(ev.EditableCatIdxs))
+	for i, ci := range ev.EditableCatIdxs {
+		editableNames[i] = ev.Categories[ci].Name
+	}
+	catPicker := renderStringPicker(editableNames, ev.CatSel, ev.FocusField == FormFieldCat, focused, unfocused)
 	lines = append(lines, "  "+catLabel+"  "+catPicker)
 	lines = append(lines, "")
 

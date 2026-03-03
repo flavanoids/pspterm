@@ -62,10 +62,14 @@ editor: ""
 #
 # Optional per-category accent color (overrides theme accent):
 #   color: "#4fc8ff"   # hex color, e.g. "#ff8800"
+#
+# Auto-scan applications from XDG .desktop files:
+#   scan: true   # replaces items with discovered apps from ~/.local/share/applications
+#                # and /usr/share/applications (plus $XDG_DATA_DIRS)
 
 categories:
-  - name: "Game"
-    icon: "⊞"
+  - name: "Terminal"
+    icon: "⌘"
     items:
       - name: "Shell"
         type: command
@@ -79,19 +83,34 @@ categories:
         type: command
         command: "htop"
 
-  - name: "Music"
-    icon: "♪"
+  - name: "Files"
+    icon: "⌂"
     items:
-      - name: "Music Dir"
+      - name: "Home"
+        type: directory
+        path: "~"
+      - name: "Documents"
+        type: directory
+        path: "~/Documents"
+      - name: "Downloads"
+        type: directory
+        path: "~/Downloads"
+      - name: "Config"
+        type: directory
+        path: "~/.config"
+      - name: "Pictures"
+        type: directory
+        path: "~/Pictures"
+      - name: "Music"
         type: directory
         path: "~/Music"
-
-  - name: "Video"
-    icon: "▶"
-    items:
-      - name: "Videos Dir"
+      - name: "Videos"
         type: directory
         path: "~/Videos"
+
+  - name: "Applications"
+    icon: "⊞"
+    scan: true
 
   - name: "Network"
     icon: "⊕"
@@ -99,31 +118,17 @@ categories:
       - name: "Ping Google"
         type: command
         command: "ping -c 4 google.com"
-
       - name: "IP Info"
         type: command
         command: "ip addr"
-
-  - name: "Photo"
-    icon: "⊡"
-    items:
-      - name: "Pictures"
-        type: directory
-        path: "~/Pictures"
-
-      - name: "Downloads"
-        type: directory
-        path: "~/Downloads"
 
   - name: "Settings"
     icon: "⚙"
     items:
       - name: "Manage Items"
         type: manager
-
       - name: "Edit Config"
         type: editconfig
-
       - name: "Home"
         type: directory
         path: "~"
@@ -142,8 +147,8 @@ theme:
 editor: ""
 
 categories:
-  - name: "Game"
-    icon: "⊞"
+  - name: "Terminal"
+    icon: "⌘"
     items:
       - name: "Shell"
         type: command
@@ -155,19 +160,34 @@ categories:
         type: command
         command: "htop"
 
-  - name: "Music"
-    icon: "♪"
+  - name: "Files"
+    icon: "⌂"
     items:
-      - name: "Music Dir"
+      - name: "Home"
+        type: directory
+        path: "~"
+      - name: "Documents"
+        type: directory
+        path: "~/Documents"
+      - name: "Downloads"
+        type: directory
+        path: "~/Downloads"
+      - name: "Config"
+        type: directory
+        path: "~/.config"
+      - name: "Pictures"
+        type: directory
+        path: "~/Pictures"
+      - name: "Music"
         type: directory
         path: "~/Music"
-
-  - name: "Video"
-    icon: "▶"
-    items:
-      - name: "Videos Dir"
+      - name: "Videos"
         type: directory
         path: "~/Videos"
+
+  - name: "Applications"
+    icon: "⊞"
+    scan: true
 
   - name: "Network"
     icon: "⊕"
@@ -178,16 +198,6 @@ categories:
       - name: "IP Info"
         type: command
         command: "ip addr"
-
-  - name: "Photo"
-    icon: "⊡"
-    items:
-      - name: "Pictures"
-        type: directory
-        path: "~/Pictures"
-      - name: "Downloads"
-        type: directory
-        path: "~/Downloads"
 
   - name: "Settings"
     icon: "⚙"
