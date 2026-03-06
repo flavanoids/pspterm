@@ -13,15 +13,21 @@ type Styles struct {
 	CatFar      lipgloss.Style
 	CatHidden   lipgloss.Style
 
+	// Dot indicator
+	DotActive   lipgloss.Style
+	DotInactive lipgloss.Style
+
 	// Item list
 	ItemSelected lipgloss.Style
 	ItemNormal   lipgloss.Style
 	ItemTitle    lipgloss.Style
+	ItemDesc     lipgloss.Style
 
 	// Layout
 	Divider   lipgloss.Style
 	Clock     lipgloss.Style
 	StatusBar lipgloss.Style
+	FlashMsg  lipgloss.Style
 	ErrorMsg  lipgloss.Style
 }
 
@@ -49,6 +55,12 @@ func NewStyles(t config.Theme) Styles {
 
 		CatHidden: lipgloss.NewStyle(),
 
+		// Dot indicator row below category bar
+		DotActive: lipgloss.NewStyle().
+			Foreground(accent),
+		DotInactive: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#0d2a40")),
+
 		// Selected item: accent blue, bold
 		ItemSelected: lipgloss.NewStyle().
 			Foreground(accent).
@@ -64,6 +76,12 @@ func NewStyles(t config.Theme) Styles {
 			Foreground(accent).
 			Bold(true),
 
+		// Item description / type hint: faint italic
+		ItemDesc: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#2e5c7a")).
+			Faint(true).
+			Italic(true),
+
 		// Divider: near-invisible dark seam
 		Divider: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#091e2e")),
@@ -76,6 +94,11 @@ func NewStyles(t config.Theme) Styles {
 		// Status bar: barely there
 		StatusBar: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#1a4060")).
+			Faint(true),
+
+		// Flash message: accent, faint — transient feedback
+		FlashMsg: lipgloss.NewStyle().
+			Foreground(accent).
 			Faint(true),
 
 		ErrorMsg: lipgloss.NewStyle().

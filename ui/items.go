@@ -13,7 +13,8 @@ func RenderItems(cat config.Category, selected int, width int, s Styles) string 
 	center := lipgloss.NewStyle().Width(width).Align(lipgloss.Center)
 
 	if len(cat.Items) == 0 {
-		return center.Render("(no items)")
+		empty := s.DotInactive.Render("no items — edit config to add")
+		return center.Render(empty)
 	}
 
 	// Derive effective accent (per-category color overrides theme)
@@ -24,11 +25,6 @@ func RenderItems(cat config.Category, selected int, width int, s Styles) string 
 		titleStyle = lipgloss.NewStyle().Inherit(s.ItemTitle).Foreground(accent)
 		selectedStyle = lipgloss.NewStyle().Inherit(s.ItemSelected).Foreground(accent)
 	}
-
-	descStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#446680")).
-		Faint(true).
-		Italic(true)
 
 	var lines []string
 
@@ -41,8 +37,13 @@ func RenderItems(cat config.Category, selected int, width int, s Styles) string 
 	for i, item := range cat.Items {
 		if i == selected {
 			lines = append(lines, center.Render(selectedStyle.Render("▶  "+item.Name)))
-			if item.Description != "" {
-				lines = append(lines, center.Render(descStyle.Render("  "+item.Description)))
+			// Description takes priority; fall back to type hint
+			hint := item.Description
+			if hint == "" {
+				hint = itemTypeHint(item.Type)
+			}
+			if hint != "" {
+				lines = append(lines, center.Render(s.ItemDesc.Render("   "+hint)))
 			}
 		} else {
 			lines = append(lines, center.Render(s.ItemNormal.Render("   "+item.Name)))
@@ -50,4 +51,21 @@ func RenderItems(cat config.Category, selected int, width int, s Styles) string 
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+// itemTypeHint returns a short contextual hint for an item type.
+func itemTypeHint(t string) string {
+	switch t {
+	case "command":
+		return "run in terminal"
+	case "directory":
+		return "navigate to directory"
+	case "url":
+		return "open in browser"
+	case "manager":
+		return "manage items"
+	case "editconfig":
+		return "edit configuration"
+	}
+	return ""
 }

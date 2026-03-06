@@ -43,8 +43,11 @@ type Model struct {
 	width  int
 	height int
 
-	exitPath string // set on directory selection
-	errMsg   string // transient error message
+	exitPath   string    // set on directory selection
+	errMsg     string    // transient error message
+	flashMsg   string    // transient feedback (e.g. "config reloaded")
+	flashUntil time.Time // when to clear flashMsg
+	showHelp   bool      // toggles full key list in status bar
 
 	keys   KeyMap
 	help   help.Model
@@ -92,6 +95,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TickMsg:
 		m.now = time.Time(msg)
+		if m.flashMsg != "" && m.now.After(m.flashUntil) {
+			m.flashMsg = ""
+		}
 		target := float64(m.selectedCat)
 		m.animPos, m.animVel = m.spring.Update(m.animPos, m.animVel, target)
 		return m, tick()
@@ -138,6 +144,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
 
+	case key.Matches(msg, m.keys.Help):
+		m.showHelp = !m.showHelp
+
 	case key.Matches(msg, m.keys.Left):
 		m.errMsg = ""
 		if m.selectedCat > 0 {
@@ -164,6 +173,16 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedItem++
 		}
 
+	case key.Matches(msg, m.keys.First):
+		m.errMsg = ""
+		m.selectedItem = 0
+
+	case key.Matches(msg, m.keys.Last):
+		m.errMsg = ""
+		if len(cats) > 0 && len(cats[m.selectedCat].Items) > 0 {
+			m.selectedItem = len(cats[m.selectedCat].Items) - 1
+		}
+
 	case key.Matches(msg, m.keys.Select):
 		m.errMsg = ""
 		return m.executeSelected()
@@ -176,6 +195,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cfg = cfg
 			m.styles = ui.NewStyles(cfg.Theme)
 			clampSelections(&m)
+			m.flashMsg = "config reloaded"
+			m.flashUntil = time.Now().Add(2 * time.Second)
 		}
 	}
 
@@ -256,13 +277,17 @@ func (m Model) View() string {
 	sb.WriteString(ui.RenderCategoryBar(cats, m.animPos, m.width, m.styles))
 	sb.WriteRune('\n')
 
+	// Dot indicator
+	sb.WriteString(ui.RenderDotIndicator(cats, m.selectedCat, m.width, m.styles))
+	sb.WriteRune('\n')
+
 	// Divider
 	sb.WriteString(m.styles.Divider.Render(strings.Repeat("─", m.width)))
 	sb.WriteRune('\n')
 
 	// Item list area — fill remaining height
-	// clock(1) + catbar(1) + divider(1) + divider(1) + statusbar(1) = 5
-	const usedLines = 5
+	// clock(1) + catbar(1) + dots(1) + divider(1) + divider(1) + statusbar(1) = 6
+	const usedLines = 6
 	itemAreaHeight := m.height - usedLines
 	if itemAreaHeight < 3 {
 		itemAreaHeight = 3
@@ -291,11 +316,14 @@ func (m Model) View() string {
 	sb.WriteString(m.styles.Divider.Render(strings.Repeat("─", m.width)))
 	sb.WriteRune('\n')
 
-	// Status / error bar
-	if m.errMsg != "" {
+	// Status / error / flash bar
+	switch {
+	case m.errMsg != "":
 		sb.WriteString(m.styles.ErrorMsg.Render(m.errMsg))
-	} else {
-		sb.WriteString(m.styles.StatusBar.Render(renderHelp(m)))
+	case m.flashMsg != "":
+		sb.WriteString(m.styles.FlashMsg.Render(m.flashMsg))
+	default:
+		sb.WriteString(m.styles.StatusBar.Render(renderStatusHelp(m)))
 	}
 
 	return sb.String()
@@ -321,15 +349,28 @@ func renderEmptyState(m Model) string {
 	return sb.String()
 }
 
-func renderHelp(m Model) string {
-	bindings := []string{
-		"←/→ category",
-		"↑/↓ item",
-		"enter select",
-		"r reload",
-		"q quit",
+func renderStatusHelp(m Model) string {
+	if m.showHelp {
+		return "←/→/tab  category    ↑/↓  item    g/G  first/last    enter  select    r  reload    ?  hide help    q  quit"
 	}
-	return strings.Join(bindings, "  ")
+	// Contextual enter action based on selected item type
+	action := "select"
+	cats := m.cfg.Categories
+	if len(cats) > 0 && len(cats[m.selectedCat].Items) > 0 {
+		switch cats[m.selectedCat].Items[m.selectedItem].Type {
+		case "command":
+			action = "run"
+		case "directory":
+			action = "cd"
+		case "url":
+			action = "open"
+		case "manager":
+			action = "manage"
+		case "editconfig":
+			action = "edit"
+		}
+	}
+	return fmt.Sprintf("←/→ category   ↑/↓ item   enter: %s   ?:help   q:quit", action)
 }
 
 func max(a, b int) int {

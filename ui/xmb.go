@@ -10,7 +10,7 @@ import (
 	"github.com/user/pspterm/config"
 )
 
-const slotWidth = 14 // horizontal spacing between category slots
+const slotWidth = 18 // horizontal spacing between category slots
 
 // RenderCategoryBar renders the XMB horizontal category bar.
 // animPos is the spring-interpolated position (float64 of selected index).
@@ -77,4 +77,22 @@ func RenderCategoryBar(cats []config.Category, animPos float64, width int, s Sty
 		result += strings.Repeat(" ", width-resultW)
 	}
 	return result
+}
+
+// RenderDotIndicator renders a centered row of dots — one per category.
+// The active category is a filled dot (•); others are hollow (·).
+func RenderDotIndicator(cats []config.Category, selected int, width int, s Styles) string {
+	if len(cats) <= 1 {
+		return strings.Repeat(" ", width)
+	}
+	var parts []string
+	for i := range cats {
+		if i == selected {
+			parts = append(parts, s.DotActive.Render("•"))
+		} else {
+			parts = append(parts, s.DotInactive.Render("·"))
+		}
+	}
+	line := strings.Join(parts, " ")
+	return lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(line)
 }
